@@ -1,0 +1,68 @@
+trigger: none
+parameters:
+  - name: AgentPool
+    displayName: Enter AgentPool Name
+    type: string
+    default: "appGatewayName"
+
+  - name: CommonRepositry
+    default: "self"
+  
+  - name: appGatewayName
+    displayName: Enter appGatewayName Name
+    type: string
+    default: "appGatewayName"
+
+  - name: appGatewaySubnetName
+    displayName: Enter appGatewaySubnetName Name
+    type: string
+    default: "appGatewaySubnetName"
+
+  - name: publicIPName
+    displayName: Enter publicIPName 
+    type: string
+    default: "publicIPName"
+
+  - name: webVMName
+    displayName: Enter webVMName
+    type: string
+    default: "webVMName"
+
+  - name: appVMName
+    displayName: Enter appVMName
+    type: string
+    default: "appVMName"
+
+jobs:
+  - job: Deploy_Arm_Template_For_Application_Gateway
+    pool: ${{ parameters.AgentPool }} 
+    displayName: Deploy Arm Template For Application Gateway  
+    workspace:
+      clean: all 
+    steps:
+      - checkout: ${{parameters.CommonRepositry}}
+        displayName: "Get CommonRepositry Templates"
+        name: CheckoutCentralRepoTemplates
+        path: "work"
+      - task: AzureCLI@2
+        displayName: "Deploy Arm Template For Application Gateway"
+        inputs:
+          azureSubscription: 3tiersetup_sc 
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          inlineScript: |
+             az deployment group create \
+             --name "Deploy-AG-Template"
+             --resource-group "3tiersetup-rg" 
+             --template-file "/Users/tanya/Desktop/3-tier-setup/arm-templates/CreateApplicationGateway/azuredeploy.json"
+             --parameters "/Users/tanya/Desktop/3-tier-setup/arm-templates/CreateApplicationGateway/azuredeploy.parameters.json"
+             --parameters \
+             appGatewayName={{parameters.appGatewayName}} \
+             appGatewaySubnetName={{parameters.appGatewaySubnetName}} \
+             publicIPName={{parameters.publicIPName}} \
+             webVMName={{parameters.webVMName}} \
+             appVMName={{parameters.appVMName}} \
+
+
+    
+  

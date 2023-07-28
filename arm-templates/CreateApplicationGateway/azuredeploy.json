@@ -1,0 +1,131 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appGatewayName": {
+      "type": "string"
+    },
+    "vnetName": {
+      "type": "string"
+    },
+    "appGatewaySubnetName": {
+      "type": "string"
+    },
+    "publicIPName": {
+      "type": "string"
+    },
+    "backendPoolName": {
+      "type": "string"
+    },
+    "httpListenerName": {
+      "type": "string"
+    },
+    "httpSettingsName": {
+      "type": "string"
+    },
+    "webVMName": {
+      "type": "string"
+    },
+    "appVMName": {
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/applicationGateways",
+      "apiVersion": "2021-02-01",
+      "name": "[parameters('appGatewayName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPName'))]",
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('webVMName'))]",
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('appVMName'))]"
+      ],
+      "properties": {
+        "sku": {
+          "name": "Standard_v2",
+          "tier": "Standard_v2"
+        },
+        "gatewayIPConfigurations": [
+          {
+            "name": "appGatewayIPConfig",
+            "properties": {
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('appGatewaySubnetName'))]"
+              }
+            }
+          }
+        ],
+        "frontendIPConfigurations": [
+          {
+            "name": "appGatewayFrontendIP",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPName'))]"
+              }
+            }
+          }
+        ],
+        "httpListeners": [
+          {
+            "name": "[parameters('httpListenerName')]",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('appGatewayName')), '/frontendIPConfigurations/appGatewayFrontendIP')]"
+              },
+              "frontendPort": {
+                "port": 80
+              },
+              "protocol": "Http",
+              "requireServerNameIndication": false
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "[parameters('backendPoolName')]",
+            "properties": {
+              "backendAddresses": [
+                {
+                  "ipAddress": "[reference(resourceId('Microsoft.Compute/virtualMachines', parameters('webVMName')), '2019-07-01', 'full').privateIps[0]]"
+                },
+                {
+                  "ipAddress": "[reference(resourceId('Microsoft.Compute/virtualMachines', parameters('appVMName')), '2019-07-01', 'full').privateIps[0]]"
+                }
+              ]
+            }
+          }
+        ],
+        "httpSettings": [
+          {
+            "name": "[parameters('httpSettingsName')]",
+            "properties": {
+              "protocol": "Http",
+              "port": 80,
+              "cookieBasedAffinity": "Disabled",
+              "requestTimeout": 30
+            }
+          }
+        ],
+        "requestRoutingRules": [
+          {
+            "name": "appGatewayRule",
+            "properties": {
+              "ruleType": "Basic",
+              "httpListener": {
+                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('appGatewayName')), '/httpListeners/', parameters('httpListenerName'))]"
+              },
+              "backendAddressPool": {
+                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('appGatewayName')), '/backendAddressPools/', parameters('backendPoolName'))]"
+              },
+              "httpSettings": {
+                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', parameters('appGatewayName')), '/httpSettings/', parameters('httpSettingsName'))]"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

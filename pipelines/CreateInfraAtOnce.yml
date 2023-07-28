@@ -1,0 +1,266 @@
+#--------------------------common parameters------------
+parameters:
+  - name: AgentPool
+    displayName: Enter AgentPool Name
+    type: string
+    default: "appGatewayName"
+
+  - name: CommonRepositry
+    default: "git://project/repo/branch"
+
+#--------------------Create Vnet------------------------
+  - name: CreateVnet
+    displayName: <========Create Vnet==========>
+    type: boolean
+
+  - name: vnetName
+    displayName: Enter vnetName Name
+    type: string
+    default: "vnetName"
+
+  - name: vnetAddressPrefix
+    displayName: Enter vnetAddressPrefix Name
+    type: string
+    default: "vnetAddressPrefix"
+
+#-------------------Create Subnet------------------------
+  - name: CreateSubnet
+    displayName: <========Create Subnet==========>
+    type: boolean
+
+  - name: vnetName
+    displayName: Enter vnetName Name
+    type: string
+    default: "vnetName"
+
+  - name: webSubnetPrefix
+    displayName: Enter webSubnetPrefix Name
+    type: string
+    default: "webSubnetPrefix"
+  
+  - name: appSubnetPrefix
+    displayName: Enter appSubnetPrefix Name
+    type: string
+    default: "appSubnetPrefix"
+
+  - name: webSubnetName
+    displayName: Enter webSubnetName Name
+    type: string
+    default: "webSubnetName"
+
+  - name: appSubnetName
+    displayName: Enter appSubnetName Name
+    type: string
+    default: "appSubnetName"
+
+#----------------------Create AppVm---------------------
+  - name: CreateAppVM
+    displayName: <========Create AppVM==========>
+    type: boolean
+
+  - name: vmName
+    displayName: Enter vmName 
+    type: string
+    default: "vmName"
+
+  - name: vmSize
+    displayName: Enter vmSize 
+    type: string
+    default: "vmSize"
+
+  - name: vnetName
+    displayName: Enter vnetName 
+    type: string
+    default: "vnetName"
+
+  - name: appSubnetName
+    displayName: Enter appSubnetName
+    type: string
+    default: "appSubnetName"
+
+#----------------------Create WebApp--------------------
+  - name: CreateWebVM
+    displayName: <========Create WebVM==========>
+    type: boolean
+
+  - name: vmName
+    displayName: Enter vmName 
+    type: string
+    default: "vmName"
+
+  - name: vmSize
+    displayName: Enter vmSize 
+    type: string
+    default: "vmSize"
+
+  - name: vnetName
+    displayName: Enter vnetName 
+    type: string
+    default: "vnetName"
+
+  - name: webSubnetName
+    displayName: Enter webSubnetName
+    type: string
+    default: "webSubnetName"
+
+#-----------------------Create SQL SERVER-----------------
+  - name: CreateSQLServer
+    displayName: <========Create SQL SERVER ==========>
+    type: boolean
+
+  - name: appVMName
+    displayName: Enter appVMName Name
+    type: string
+    default: "appVMName"
+
+#------------------Create PublibIp--------------------  
+  - name: CreatePublicIp
+    displayName: <========Create PublibIp==========>
+    type: boolean
+
+  - name: publicIPName
+    displayName: Enter publicIPName Name
+    type: string
+    default: "publicIPName"
+
+#-------------------Create ApplicationGateway---------
+  - name: CreateApplicationGateway
+    displayName: <========Create Application Gateway==========>
+    type: boolean
+  
+  - name: appGatewayName
+    displayName: Enter appGatewayName Name
+    type: string
+    default: "appGatewayName"
+
+  - name: appGatewaySubnetName
+    displayName: Enter appGatewaySubnetName Name
+    type: string
+    default: "appGatewaySubnetName"
+
+  - name: publicIPName
+    displayName: Enter publicIPName 
+    type: string
+    default: "publicIPName"
+
+  - name: webVMName
+    displayName: Enter webVMName
+    type: string
+    default: "webVMName"
+
+  - name: appVMName
+    displayName: Enter appVMName
+    type: string
+    default: "appVMName"
+
+#------------------------END OF PARAMETER SECTION---------
+#----------------START OF LOGIC SECTION-------------------
+trigger: 
+   - none
+
+resources:
+  repositories: 
+    - repository: CentralTemplates
+      type: git
+      name: project/repo
+      ref: branch
+
+#------------------Create Vnet--------------------------
+stages:
+  - stage: CreateVnet1
+    jobs: 
+      - job: CreateVnet1
+      - ${{ if eq(parameters.CreateVnet, true) }}:
+          - template: pipelines/CreateVnet.yml@CentralTemplates
+            parameters:
+              AgentPool: ${{parameters.AgentPool}}
+              CommonRepositry: ${{parameters.CommonRepositry}}
+              vnetName: ${{parameters.vnetName}}
+              vnetAddressPrefix: ${{parameters.vnetAddressPrefix}}
+
+#-------------------Create Subnet----------------
+
+  - stage: CreateSubnet1
+    jobs: 
+      - job: CreateSubnet1
+      - ${{ if eq(parameters.CreateSubnet, true) }}:
+          - template: pipelines/CreateSubnet.yml@CentralTemplates
+            parameters:
+              AgentPool: ${{parameters.AgentPool}}
+              CommonRepositry: ${{parameters.CommonRepositry}}
+              vnetName: ${{parameters.vnetName}}
+              webSubnetPrefix: ${{parameters.webSubnetPrefix}} 
+              appSubnetPrefix: ${{parameters.appSubnetPrefix}}     
+              webSubnetName: ${{parameters.webSubnetName}} 
+              appSubnetName: ${{parameters.appSubnetName}}  
+
+#----------------------Create AppVM---------------             
+  - stage: CreateAppVM1
+    jobs: 
+      - job: CreateAppVM1
+      - ${{ if eq(parameters.CreateAppVM, true) }}:
+          - template: pipelines/CreateAppVM.yml@CentralTemplates
+            parameters:
+              AgentPool: ${{parameters.AgentPool}}
+              CommonRepositry: ${{parameters.CommonRepositry}}
+              vmName: ${{parameters.vmName}}
+              vmSize: ${{parameters.vmSize}}
+              vnetName: ${{parameters.vnetName}}
+              appSubnetName: ${{parameters.appSubnetName}}
+
+#----------------------Create WebVM---------------             
+  - stage: CreateWebVM1
+    jobs: 
+      - job: CreateWebVM1
+      - ${{ if eq(parameters.CreateWebVM, true) }}:
+          - template: pipelines/CreateWebVM.yml@CentralTemplates
+            parameters:
+              AgentPool: ${{parameters.AgentPool}}
+              CommonRepositry: ${{parameters.CommonRepositry}}
+              vmName: ${{parameters.vmName}}
+              vmSize: ${{parameters.vmSize}}
+              vnetName: ${{parameters.vnetName}}
+              webSubnetName: ${{parameters.webSubnetName}}
+
+#------------------Create SQLServer---------------             
+  - stage: CreateSQLServer1
+    jobs: 
+      - job: CreateSQLServer1
+      - ${{ if eq(parameters.CreateSQLServer, true) }}:
+          - template: pipelines/CreateSQLServer.yml@CentralTemplates
+            parameters:
+              AgentPool: ${{parameters.AgentPool}}
+              CommonRepositry: ${{parameters.CommonRepositry}}
+              appVMName: ${{parameters.appVMName}}
+
+#---------------------Create Public Ip----------------------  
+
+  - stage: CreatePublicIp1
+    jobs: 
+      - job: CreatePublicIp1
+      - ${{ if eq(parameters.CreatePublicIp, true) }}:
+          - template: pipelines/CreatePublicIp.yml@CentralTemplates
+            parameters:
+              AgentPool: ${{parameters.AgentPool}}
+              CommonRepositry: ${{parameters.CommonRepositry}}
+              publicIPName: ${{parameters.publicIPName}}
+
+#---------------------Create Application Gateway--------------
+  - stage: CreateApplicationGateway1
+    jobs: 
+      - job: CreateApplicationGateway1
+      - ${{ if eq(parameters.CreateApplicationGateway, true) }}:
+          - template: pipelines/CreateApplicationGateway.yml@CentralTemplates
+            parameters:
+              AgentPool: ${{parameters.AgentPool}}
+              CommonRepositry: ${{parameters.CommonRepositry}}
+              appGatewayName: ${{parameters.appGatewayName}}
+              appGatewaySubnetName: ${{parameters.appGatewaySubnetName}}
+              publicIPName: ${{parameters.publicIPName}}
+              webVMName: ${{parameters.webVMName}}
+              appVMName: ${{parameters.appVMName}}
+
+              
+
+      
+                         
