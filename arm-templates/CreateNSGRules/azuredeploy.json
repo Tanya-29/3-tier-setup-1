@@ -1,0 +1,142 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "virtualNetworkName": {
+      "type": "string",
+      "defaultValue": "YourVNetName"
+    }
+  },
+  "variables": {
+    "appGatewaySubnetName": "appgtwysubnet",
+    "webVmSubnetIPRange": "WebVMSubnetIPRange", 
+    "appVmSubnetIPRange": "AppVMSubnetIPRange", 
+    "databasePort": "DatabasePort" 
+  },
+  "resources": [
+    {
+      // Application Gateway NSG Resource
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2021-02-01",
+      "name": "[format('{0}-appGatewayNSG', parameters('virtualNetworkName'))]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "AllowHTTPFromInternet",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "80",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "AllowHTTPSFromInternet",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 110,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "AllowHTTPFromAppGateway",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "80",
+              "sourceAddressPrefix": "[reference(resourceId('Microsoft.Network/applicationGateways', parameters('virtualNetworkName'), 'YourApplicationGatewayName')).frontendIPConfigurations[0].properties.publicIPAddress.id]",
+              "destinationAddressPrefix": "[variables('webVmSubnetIPRange')]",
+              "access": "Allow",
+              "priority": 120,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "AllowHTTPSFromAppGateway",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "[reference(resourceId('Microsoft.Network/applicationGateways', parameters('virtualNetworkName'), 'YourApplicationGatewayName')).frontendIPConfigurations[0].properties.publicIPAddress.id]",
+              "destinationAddressPrefix": "[variables('webVmSubnetIPRange')]",
+              "access": "Allow",
+              "priority": 130,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      // Web VM NSG Resource
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2021-02-01",
+      "name": "[format('{0}-webVmNSG', parameters('virtualNetworkName'))]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "AllowHTTPFromAppGatewayToWebVM",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "80",
+              "sourceAddressPrefix": "[reference(resourceId('Microsoft.Network/networkSecurityGroups', parameters('virtualNetworkName'), variables('appGatewaySubnetName'),'/AllowHTTPFromAppGateway')).properties.securityRules[0].sourceAddressPrefix]",
+              "destinationAddressPrefix": "[variables('webVmSubnetIPRange')]",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "AllowHTTPSFromAppGatewayToWebVM",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "[reference(resourceId('Microsoft.Network/networkSecurityGroups', parameters('virtualNetworkName'), variables('appGatewaySubnetName'),'/AllowHTTPSFromAppGateway')).properties.securityRules[0].sourceAddressPrefix]",
+              "destinationAddressPrefix": "[variables('webVmSubnetIPRange')]",
+              "access": "Allow",
+              "priority": 110,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      // App VM NSG Resource
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2021-02-01",
+      "name": "[format('{0}-appVmNSG', parameters('virtualNetworkName'))]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "AllowDatabaseFromWebVM",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "[variables('databasePort')]",
+              "sourceAddressPrefix": "[variables('webVmSubnetIPRange')]",
+              "destinationAddressPrefix": "[variables('appVmSubnetIPRange')]",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

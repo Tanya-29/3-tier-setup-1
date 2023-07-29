@@ -1,0 +1,73 @@
+trigger: none
+parameters:
+  - name: AgentPool
+    displayName: Enter AgentPool Name
+    type: string
+    default: "appGatewayName"
+
+  - name: CommonRepositry
+    default: "self"
+  
+  - name: vnetName
+    displayName: Enter vnetName Name
+    type: string
+    default: "vnetName"
+
+  - name: webSubnetPrefix
+    displayName: Enter webSubnetPrefix Name
+    type: string
+    default: "webSubnetPrefix"
+  
+  - name: appSubnetPrefix
+    displayName: Enter appSubnetPrefix Name
+    type: string
+    default: "appSubnetPrefix"
+
+  - name: webSubnetName
+    displayName: Enter webSubnetName Name
+    type: string
+    default: "webSubnetName"
+
+  - name: appSubnetName
+    displayName: Enter appSubnetName Name
+    type: string
+    default: "appSubnetName"
+
+  
+
+jobs:
+  - job: Deploy_Arm_Template_For_Subnet
+    pool: ${{ parameters.AgentPool }} 
+    displayName: Deploy Arm Template For Subnet  
+    workspace:
+      clean: all 
+    steps:
+      - checkout: ${{parameters.CommonRepositry}}
+        displayName: "Get CommonRepositry Templates"
+        name: CheckoutCentralRepoTemplates
+        path: "work"
+      - task: AzureCLI@2
+        displayName: "Deploy Arm Template For Subnet"
+        inputs:
+          azureSubscription: 3tiersetup_sc 
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          inlineScript: |
+             az deployment group create \
+             --name "Deploy-PIP-Template"
+             --resource-group "3tiersetup-rg" 
+             --template-file "/Users/tanya/Desktop/3-tier-setup/arm-templates/CreateSubnet/azuredeploy.json"
+             --parameters "/Users/tanya/Desktop/3-tier-setup/arm-templates/CreateSubnet/azuredeploy.parameters.json"
+             --parameters \
+             vnetName={{parameters.vnetName}} \
+             webSubnetPrefix={{parameters.webSubnetPrefix}} \
+             appSubnetPrefix={{parameters.appSubnetPrefix}} \
+             webSubnetName={{parameters.webSubnetName}} \
+             appSubnetName={{parameters.appSubnetName}} \
+
+             
+             
+
+
+    
+  

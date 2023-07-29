@@ -1,0 +1,46 @@
+trigger: none
+parameters:
+  - name: AgentPool
+    displayName: Enter AgentPool Name
+    type: string
+    default: "appGatewayName"
+
+  - name: CommonRepositry
+    default: "self"
+  
+  - name: publicIPName
+    displayName: Enter publicIPName Name
+    type: string
+    default: "publicIPName"
+
+jobs:
+  - job: Deploy_Arm_Template_For_PublicIP
+    pool: ${{ parameters.AgentPool }} 
+    displayName: Deploy Arm Template For PIP  
+    workspace:
+      clean: all 
+    steps:
+      - checkout: ${{parameters.CommonRepositry}}
+        displayName: "Get CommonRepositry Templates"
+        name: CheckoutCentralRepoTemplates
+        path: "work"
+      - task: AzureCLI@2
+        displayName: "Deploy Arm Template For PIP"
+        inputs:
+          azureSubscription: 3tiersetup_sc 
+          scriptType: "bash"
+          scriptLocation: "inlineScript"
+          inlineScript: |
+             az deployment group create \
+             --name "Deploy-PIP-Template"
+             --resource-group "3tiersetup-rg" 
+             --template-file "/Users/tanya/Desktop/3-tier-setup/arm-templates/CreatePublicIp/azuredeploy.json"
+             --parameters "/Users/tanya/Desktop/3-tier-setup/arm-templates/CreatePublicIp/azuredeploy.parameters.json"
+             --parameters \
+             publicIPName={{parameters.publicIPName}} \
+             
+             
+
+
+    
+  
